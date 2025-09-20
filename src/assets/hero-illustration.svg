@@ -1,0 +1,83 @@
+<svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Elements -->
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#007BFF"/>
+      <stop offset="100%" style="stop-color:#6610f2"/>
+    </linearGradient>
+    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f9fa"/>
+      <stop offset="100%" style="stop-color:#ffffff"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Device/Screen -->
+  <rect x="100" y="80" width="400" height="240" rx="20" fill="url(#screenGradient)" stroke="#007BFF" stroke-width="2"/>
+  
+  <!-- Screen Content - Presentation Slides -->
+  <rect x="120" y="100" width="120" height="80" rx="8" fill="#007BFF" opacity="0.1"/>
+  <rect x="260" y="100" width="120" height="80" rx="8" fill="#28A745" opacity="0.1"/>
+  <rect x="400" y="100" width="60" height="80" rx="8" fill="#DC3545" opacity="0.1"/>
+  
+  <!-- Slide Content Lines -->
+  <rect x="130" y="110" width="80" height="4" rx="2" fill="#007BFF" opacity="0.6"/>
+  <rect x="130" y="120" width="60" height="4" rx="2" fill="#6C757D" opacity="0.4"/>
+  <rect x="130" y="130" width="70" height="4" rx="2" fill="#6C757D" opacity="0.4"/>
+  
+  <rect x="270" y="110" width="80" height="4" rx="2" fill="#28A745" opacity="0.6"/>
+  <rect x="270" y="120" width="60" height="4" rx="2" fill="#6C757D" opacity="0.4"/>
+  <rect x="270" y="130" width="70" height="4" rx="2" fill="#6C757D" opacity="0.4"/>
+  
+  <!-- AI Brain/Network -->
+  <circle cx="300" cy="250" r="30" fill="url(#primaryGradient)" opacity="0.2"/>
+  <circle cx="300" cy="250" r="20" fill="none" stroke="#007BFF" stroke-width="2"/>
+  <circle cx="300" cy="250" r="4" fill="#007BFF"/>
+  
+  <!-- Network Connections -->
+  <line x1="280" y1="235" x2="200" y2="200" stroke="#007BFF" stroke-width="2" opacity="0.6"/>
+  <line x1="320" y1="235" x2="400" y2="200" stroke="#007BFF" stroke-width="2" opacity="0.6"/>
+  <line x1="285" y1="265" x2="180" y2="300" stroke="#007BFF" stroke-width="2" opacity="0.6"/>
+  <line x1="315" y1="265" x2="420" y2="300" stroke="#007BFF" stroke-width="2" opacity="0.6"/>
+  
+  <!-- Connection Nodes -->
+  <circle cx="200" cy="200" r="6" fill="#28A745"/>
+  <circle cx="400" cy="200" r="6" fill="#DC3545"/>
+  <circle cx="180" cy="300" r="6" fill="#007BFF"/>
+  <circle cx="420" cy="300" r="6" fill="#6C757D"/>
+  
+  <!-- Floating UI Elements -->
+  <rect x="50" y="150" width="40" height="30" rx="6" fill="#ffffff" stroke="#007BFF" stroke-width="1"/>
+  <rect x="55" y="155" width="20" height="2" rx="1" fill="#007BFF"/>
+  <rect x="55" y="160" width="15" height="2" rx="1" fill="#6C757D"/>
+  <rect x="55" y="165" width="18" height="2" rx="1" fill="#6C757D"/>
+  
+  <rect x="510" y="200" width="40" height="30" rx="6" fill="#ffffff" stroke="#28A745" stroke-width="1"/>
+  <circle cx="520" cy="210" r="3" fill="#28A745"/>
+  <rect x="525" y="207" width="15" height="2" rx="1" fill="#28A745"/>
+  <rect x="525" y="212" width="12" height="2" rx="1" fill="#6C757D"/>
+  
+  <!-- Sparkle/Magic Effects -->
+  <g transform="translate(150, 50)">
+    <path d="M0,10 L3,3 L10,0 L3,-3 L0,-10 L-3,-3 L-10,0 L-3,3 Z" fill="#007BFF" opacity="0.8"/>
+  </g>
+  <g transform="translate(450, 60)">
+    <path d="M0,8 L2.4,2.4 L8,0 L2.4,-2.4 L0,-8 L-2.4,-2.4 L-8,0 L-2.4,2.4 Z" fill="#28A745" opacity="0.6"/>
+  </g>
+  <g transform="translate(80, 350)">
+    <path d="M0,6 L1.8,1.8 L6,0 L1.8,-1.8 L0,-6 L-1.8,-1.8 L-6,0 L-1.8,1.8 Z" fill="#DC3545" opacity="0.7"/>
+  </g>
+  
+  <!-- Abstract Data Visualization -->
+  <g transform="translate(480, 120)">
+    <rect x="0" y="20" width="6" height="20" rx="3" fill="#007BFF" opacity="0.6"/>
+    <rect x="10" y="15" width="6" height="25" rx="3" fill="#28A745" opacity="0.6"/>
+    <rect x="20" y="10" width="6" height="30" rx="3" fill="#DC3545" opacity="0.6"/>
+    <rect x="30" y="5" width="6" height="35" rx="3" fill="#007BFF" opacity="0.8"/>
+  </g>
+  
+  <!-- Progress Indicator -->
+  <g transform="translate(80, 120)">
+    <rect x="0" y="0" width="60" height="8" rx="4" fill="#f8f9fa" stroke="#6C757D" stroke-width="1"/>
+    <rect x="2" y="2" width="40" height="4" rx="2" fill="url(#primaryGradient)"/>
+  </g>
+</svg>
