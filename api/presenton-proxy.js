@@ -15,6 +15,14 @@ export default async function handler(req, res) {
   try {
     console.log('Presenton proxy request body:', req.body);
     
+    // Check for API key
+    const apiKey = process.env.PRESENTON_API_KEY;
+    const apiUrl = process.env.PRESENTON_API_URL || 'https://api.presenton.ai';
+    
+    if (!apiKey) {
+      console.warn('PRESENTON_API_KEY not configured, proceeding without authentication');
+    }
+    
     // Map your app's request to Presenton's API format
     const presentonBody = {
       content: req.body.prompt,  // Map your app's prompt to 'content'
@@ -26,13 +34,26 @@ export default async function handler(req, res) {
     };
     
     console.log('Sending to Presenton API:', presentonBody);
+    console.log('Using API URL:', apiUrl);
     
-    // Call local Presenton API
-    const response = await fetch('http://localhost:5001/api/v1/ppt/presentation/generate', {
+    // Prepare headers with optional authentication
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Add authentication header if API key is available
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+      // Alternative auth patterns (uncomment the one your API uses):
+      // headers['X-API-Key'] = apiKey;
+      // headers['Authorization'] = `API-Key ${apiKey}`;
+      console.log('Adding authentication header');
+    }
+    
+    // Call Presenton API
+    const response = await fetch(`${apiUrl}/api/v1/ppt/presentation/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(presentonBody),
     });
 
@@ -41,6 +62,16 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Presenton API error:', errorText);
+      
+      // Handle specific authentication errors
+      if (response.status === 401) {
+        throw new Error('Authentication failed: Invalid or missing API key. Please check your PRESENTON_API_KEY environment variable.');
+      } else if (response.status === 403) {
+        throw new Error('Access forbidden: Your API key does not have permission to access this resource.');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded: Too many requests. Please try again later.');
+      }
+      
       throw new Error(`Presenton API error: ${response.status} - ${errorText}`);
     }
 

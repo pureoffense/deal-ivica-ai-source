@@ -57,18 +57,33 @@ If you want to use the actual Presenton API for AI-generated content:
      -d '{"content": "Test presentation", "n_slides": 3}'
    ```
 
-3. **Update Environment** (if needed):
+3. **Configure Authentication**:
    ```env
-   # Add to your .env file if Presenton requires authentication
-   PRESENTON_API_KEY=your_api_key_here
+   # Add to your .env file
+   PRESENTON_API_KEY=your_actual_presenton_api_key
+   PRESENTON_API_URL=http://localhost:5001
    ```
+
+   For production deployment on Vercel:
+   ```bash
+   # Set environment variables in Vercel
+   vercel env add PRESENTON_API_KEY
+   vercel env add PRESENTON_API_URL
+   ```
+
+   Or via Vercel Dashboard:
+   - Go to your project settings
+   - Navigate to "Environment Variables"
+   - Add `PRESENTON_API_KEY` with your API key
+   - Add `PRESENTON_API_URL` with your production URL
 
 ### API Integration Details
 
 The proxy function in `api/presenton-proxy.js` handles:
 - **Request mapping**: Converts your app's format to Presenton's expected format
+- **Authentication**: Automatically includes API key in Authorization header
 - **CORS handling**: Enables cross-origin requests
-- **Error handling**: Provides detailed error messages
+- **Error handling**: Provides detailed error messages with specific auth error handling
 
 Request format sent to Presenton:
 ```json
@@ -117,22 +132,31 @@ Expected response from Presenton:
 
 ### Common Issues
 
-1. **"Failed to generate presentation"**
+1. **"Authentication failed: Invalid or missing API key"**
+   - ✅ Check your `PRESENTON_API_KEY` in `.env` file
+   - Verify the API key is correct and active
+   - For Vercel: Ensure environment variable is set in project settings
+
+2. **"Access forbidden"**
+   - Your API key doesn't have required permissions
+   - Contact Presenton team to verify your API key scope
+
+3. **"Failed to generate presentation"**
    - ✅ **Expected behavior** - App will fallback to mock data
    - Check if Presenton service is running
-   - Verify the API endpoint URL
+   - Verify the API endpoint URL in `PRESENTON_API_URL`
 
-2. **CORS errors**
+4. **CORS errors**
    - The proxy function should handle CORS
    - Check `api/presenton-proxy.js` for CORS headers
 
-3. **API format mismatch**
+5. **API format mismatch**
    - Verify Presenton API documentation
    - Update request mapping in `presenton-proxy.js`
 
-4. **Presentation URLs not working**
+6. **Presentation URLs not working**
    - Mock data will show placeholder URLs
-   - Real Presenton URLs should point to `localhost:5001`
+   - Real Presenton URLs should point to your configured API URL
 
 ### Debug Mode
 

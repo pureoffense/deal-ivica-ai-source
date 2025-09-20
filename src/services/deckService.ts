@@ -25,8 +25,8 @@ interface DeckResponse {
 export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse> => {
   console.log('Creating deck with data:', data);
   
-  // Use proxy for Gamma API calls (API key is stored in Vercel environment)
-  console.log('Using Gamma API via Vercel proxy');
+  // Use proxy for Presenton API calls (API key is stored in Vercel environment)
+  console.log('Using Presenton API via Vercel proxy');
   
   try {
     // Get current user
@@ -68,8 +68,8 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
       prompt_text: data.prompt,
       generated_content_json: {
         presentation_id: generatedContent.presentation_id,
-        presentation_url: `http://localhost:5001${generatedContent.path}`,
-        edit_url: `http://localhost:5001${generatedContent.edit_path}`,
+        presentation_url: `https://api.presenton.ai${generatedContent.path}`,
+        edit_url: `https://api.presenton.ai${generatedContent.edit_path}`,
         raw_response: generatedContent
       },
       gate_settings_json: data.gates || [],
@@ -101,8 +101,8 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
         title: deck.title,
         slideCount: generatedContent.n_slides || 8,
         theme: 'professional',
-        presentation_url: `http://localhost:5001${generatedContent.path}`,
-        edit_url: `http://localhost:5001${generatedContent.edit_path}`,
+        presentation_url: `https://api.presenton.ai${generatedContent.path}`,
+        edit_url: `https://api.presenton.ai${generatedContent.edit_path}`,
         presentation_id: generatedContent.presentation_id
       }
     };
@@ -110,15 +110,15 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
   } catch (error) {
     console.error('Deck creation error:', error);
     
-    // Fallback to mock data if Gamma fails
+    // Fallback to mock data if Presenton API fails
     if (error && typeof error === 'object' && 'response' in error) {
       const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
       if (axiosError.response?.status === 401) {
-        throw new Error('Invalid API key. Please check your Gamma configuration.');
+        throw new Error('Invalid API key. Please check your Presenton API configuration.');
       }
       
       if (axiosError.response?.status && axiosError.response.status >= 400) {
-        throw new Error(`Gamma API Error: ${axiosError.response.data?.message || 'Failed to generate presentation'}`);
+        throw new Error(`Presenton API Error: ${axiosError.response.data?.message || 'Failed to generate presentation'}`);
       }
     }
     
