@@ -45,35 +45,78 @@ export function PresentationViewer({
 
       try {
         console.log('Fetching presentation from:', presentationUrl);
+        console.log('Attempting CORS fetch with credentials omitted');
         
-        const response = await fetch(presentationUrl, {
-          method: 'GET',
-          mode: 'cors',
-          credentials: 'omit',
-          headers: {
-            'Accept': 'application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,*/*'
-          }
-        });
+        // First try with CORS mode
+        let response;
+        try {
+          response = await fetch(presentationUrl, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit',
+            headers: {
+              'Accept': 'application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,*/*'
+            }
+          });
+        } catch (corsError) {
+          console.warn('CORS fetch failed, trying no-cors mode:', corsError);
+          // Try no-cors mode as fallback
+          response = await fetch(presentationUrl, {
+            method: 'GET',
+            mode: 'no-cors',
+            credentials: 'omit'
+          });
+        }
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
+        const contentType = response.headers.get('content-type');
+        console.log('Response content type:', contentType);
+        
         const blob = await response.blob();
+        console.log('Blob size:', blob.size, 'bytes, type:', blob.type);
+        
+        if (blob.size === 0) {
+          throw new Error('Received empty file - possible CORS restriction');
+        }
+        
         const url = URL.createObjectURL(blob);
         setBlobUrl(url);
         console.log('Successfully created blob URL for presentation');
 
       } catch (fetchError) {
         console.error('Failed to fetch presentation:', fetchError);
+        console.error('Fetch error details:', {
+          name: fetchError instanceof Error ? fetchError.name : 'Unknown',
+          message: fetchError instanceof Error ? fetchError.message : 'Network error',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined
+        });
+        
         setError(`Failed to load presentation: ${fetchError instanceof Error ? fetchError.message : 'Network error'}`);
         
-        // Fallback to DocViewer for direct URL
-        console.log('Falling back to DocViewer with direct URL');
+        // Try a proxy fetch approach
+        console.log('Attempting proxy fetch...');
+        try {
+          const proxyResponse = await fetch(`/api/fetch-presentation?url=${encodeURIComponent(presentationUrl)}`);
+          if (proxyResponse.ok) {
+            const blob = await proxyResponse.blob();
+            const url = URL.createObjectURL(blob);
+            setBlobUrl(url);
+            console.log('Successfully fetched via proxy');
+            return;
+          }
+        } catch (proxyError) {
+          console.warn('Proxy fetch also failed:', proxyError);
+        }
+        
+        // Final fallback to DocViewer
+        console.log('All fetch methods failed, falling back to DocViewer with direct URL');
         setViewerType('docviewer');
-      } finally {
-        setLoading(false);
       }
+      
+      setLoading(false);
     };
 
     fetchPresentationBlob();
@@ -258,9 +301,20 @@ export function PresentationViewer({
     return (
       <div className="h-full">
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="text-sm text-amber-700">
-            Using fallback viewer. For best experience, ensure CORS is enabled on the file server.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-amber-700 font-medium">Using Alternative Viewer</p>
+              <p className="text-xs text-amber-600 mt-1">
+                PDF viewer couldn't load due to CORS restrictions. Using fallback viewer.
+              </p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded hover:bg-amber-200 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         </div>
         <DocViewer
           documents={documents}
@@ -295,9 +349,27 @@ export function PresentationViewer({
       
       {/* Action buttons in footer */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
-        <p className="text-sm text-gray-500">
-          Having trouble viewing? Try downloading or opening in Presenton.
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-gray-500">
+            Having trouble viewing? Try downloading or opening in Presenton.
+          </p>
+          {error && (
+            <button
+              onClick={() => {
+                console.log('Debug Info:', {
+                  presentationUrl,
+                  error,
+                  viewerType,
+                  blobUrl: !!blobUrl
+                });
+                alert(`Debug Info logged to console. Presentation URL: ${presentationUrl?.substring(0, 50)}...`);
+              }}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Debug Info
+            </button>
+          )}
+        </div>
         <div className="flex gap-2">
           <a
             href={presentationUrl}
