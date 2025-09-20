@@ -97,18 +97,37 @@ export function PresentationViewer({
         setError(`Failed to load presentation: ${fetchError instanceof Error ? fetchError.message : 'Network error'}`);
         
         // Try a proxy fetch approach
-        console.log('Attempting proxy fetch...');
+        const proxyUrl = `/api/fetch-presentation?url=${encodeURIComponent(presentationUrl)}`;
+        console.log('🔄 Attempting proxy fetch...');
+        console.log('📍 Full S3 URL being fetched:', presentationUrl);
+        console.log('🔗 Proxy URL:', proxyUrl);
+        
         try {
-          const proxyResponse = await fetch(`/api/fetch-presentation?url=${encodeURIComponent(presentationUrl)}`);
+          const proxyResponse = await fetch(proxyUrl);
+          console.log('📊 Proxy response status:', proxyResponse.status);
+          console.log('📊 Proxy response statusText:', proxyResponse.statusText);
+          console.log('📊 Proxy response headers:', Object.fromEntries(proxyResponse.headers.entries()));
+          
           if (proxyResponse.ok) {
             const blob = await proxyResponse.blob();
+            console.log('✅ Proxy fetch successful - blob size:', blob.size, 'bytes');
             const url = URL.createObjectURL(blob);
             setBlobUrl(url);
-            console.log('Successfully fetched via proxy');
+            console.log('✅ Successfully fetched via proxy');
             return;
+          } else {
+            // Log error details for non-200 responses
+            const errorText = await proxyResponse.text();
+            console.error('❌ Proxy fetch failed with status:', proxyResponse.status);
+            console.error('❌ Proxy error details:', errorText);
           }
         } catch (proxyError) {
-          console.warn('Proxy fetch also failed:', proxyError);
+          console.error('❌ Proxy fetch exception:', proxyError);
+          console.error('❌ Proxy error details:', {
+            name: proxyError instanceof Error ? proxyError.name : 'Unknown',
+            message: proxyError instanceof Error ? proxyError.message : 'Network error',
+            stack: proxyError instanceof Error ? proxyError.stack : undefined
+          });
         }
         
         // Final fallback to DocViewer
