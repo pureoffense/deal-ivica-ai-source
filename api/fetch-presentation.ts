@@ -22,7 +22,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       's3.amazonaws.com',
       'amazonaws.com',
       '.s3.amazonaws.com',
-      'presenton-files.s3.amazonaws.com'
+      'presenton-files.s3.amazonaws.com',
+      'presenton-public.s3.amazonaws.com',
+      'presenton-public.s3.ap-southeast-1.amazonaws.com'
     ];
 
     const urlObj = new URL(url);
