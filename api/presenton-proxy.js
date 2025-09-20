@@ -15,18 +15,18 @@ export default async function handler(req, res) {
   try {
     console.log('Presenton proxy request body:', req.body);
     console.log('Environment check:', {
-      apiKeySet: !!process.env.PRESENTON_API_KEY,
-      apiKeyPreview: process.env.PRESENTON_API_KEY ? `${process.env.PRESENTON_API_KEY.substring(0, 15)}...` : 'NOT SET',
-      apiUrl: process.env.PRESENTON_API_URL || 'NOT SET'
+      apiKeySet: !!process.env.VITE_PRESENTON_API_KEY,
+      apiKeyPreview: process.env.VITE_PRESENTON_API_KEY ? `${process.env.VITE_PRESENTON_API_KEY.substring(0, 15)}...` : 'NOT SET',
+      apiUrl: process.env.VITE_PRESENTON_API_URL || 'NOT SET'
     });
     
-    // Check for API key
-    const apiKey = process.env.PRESENTON_API_KEY;
-    const apiUrl = process.env.PRESENTON_API_URL || 'https://api.presenton.ai';
+    // Check for API key (use VITE_ prefix to match client-side env vars)
+    const apiKey = process.env.VITE_PRESENTON_API_KEY;
+    const apiUrl = process.env.VITE_PRESENTON_API_URL || 'https://api.presenton.ai';
     
     if (!apiKey) {
-      console.error('❌ PRESENTON_API_KEY not configured!');
-      throw new Error('API key not configured. Please set PRESENTON_API_KEY in Vercel environment variables.');
+      console.error('❌ VITE_PRESENTON_API_KEY not configured!');
+      throw new Error('API key not configured. Please set VITE_PRESENTON_API_KEY in Vercel environment variables.');
     }
     
     // Map your app's request to Presenton's API format
@@ -34,9 +34,10 @@ export default async function handler(req, res) {
       content: req.body.prompt,  // Map your app's prompt to 'content'
       n_slides: req.body.settings?.slide_count === 'auto' ? 8 : parseInt(req.body.settings?.slide_count || 8),  // Default to 8 slides
       language: 'English',  // Or map from your settings
-      template: req.body.settings?.theme || 'general',
-      export_as: 'pdf',  // Or 'pptx'; adjust based on your needs
-      tone: req.body.settings?.tone || 'professional'
+      template: 'general',  // Use valid Presenton template: 'general', 'modern', 'standard', 'swift'
+      export_as: 'pptx',  // Use pptx format
+      tone: req.body.settings?.tone || 'professional',
+      web_search: false
     };
     
     console.log('Sending to Presenton API:', presentonBody);
@@ -71,7 +72,10 @@ export default async function handler(req, res) {
       
       // Handle specific authentication errors
       if (response.status === 401) {
-        throw new Error('Authentication failed: Invalid or missing API key. Please check your PRESENTON_API_KEY environment variable.');
+        if (errorText.includes('Could not authenticate token')) {
+          throw new Error('Invalid API key: The Presenton API key is expired or incorrect. Please generate a new key at https://presenton.ai/account');
+        }
+        throw new Error('Authentication failed: Invalid or missing API key. Please check your VITE_PRESENTON_API_KEY environment variable.');
       } else if (response.status === 403) {
         throw new Error('Access forbidden: Your API key does not have permission to access this resource.');
       } else if (response.status === 429) {

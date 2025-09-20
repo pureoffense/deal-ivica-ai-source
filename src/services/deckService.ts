@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
+import { generatePresentation } from './presentonService';
 
 // Presenton API is synchronous - no polling needed
 
@@ -25,8 +26,8 @@ interface DeckResponse {
 export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse> => {
   console.log('Creating deck with data:', data);
   
-  // Use proxy for Presenton API calls (API key is stored in Vercel environment)
-  console.log('Using Presenton API via Vercel proxy');
+  // Check if we're in development or production
+  const isDevelopment = import.meta.env.DEV;
   
   try {
     // Get current user
@@ -35,27 +36,46 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
       throw new Error('User not authenticated');
     }
 
-    console.log('Calling Presenton API via proxy...');
-    // Call Presenton API through Vercel proxy to avoid CORS
-    const createResponse = await axios.post('/api/presenton-proxy', {
-      prompt: data.prompt,
-      settings: {
-        theme: 'professional',
-        format: 'presentation',
-        include_images: true,
-        slide_count: 'auto'
-      }
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    let generatedContent;
+    
+    if (isDevelopment) {
+      // Use direct Presenton API for local development
+      console.log('Using direct Presenton API for development...');
+      
+      const presentationResponse = await generatePresentation({
+        content: data.prompt,
+        n_slides: 8,
+        language: 'English',
+        template: 'general', // Valid Presenton template
+        export_as: 'pptx',
+        tone: 'professional'
+      });
+      
+      generatedContent = presentationResponse;
+      console.log('Presenton generation completed:', generatedContent);
+    } else {
+      // Use Vercel proxy for production (API key hidden in serverless function)
+      console.log('Using Presenton API via Vercel proxy for production...');
+      
+      const createResponse = await axios.post('/api/presenton-proxy', {
+        prompt: data.prompt,
+        settings: {
+          theme: 'professional',
+          format: 'presentation',
+          include_images: true,
+          slide_count: 'auto'
+        }
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
-    const createData = createResponse.data;
-    console.log('Presenton generation completed:', createData);
+      generatedContent = createResponse.data;
+      console.log('Presenton generation completed:', generatedContent);
+    }
     
     // Presenton returns the result immediately, no polling needed
-    const generatedContent = createData;
     
     // Generate unique URL for the deck (TEXT field)
     const uniqueUrl = `deck-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -68,8 +88,8 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
       prompt_text: data.prompt,
       generated_content_json: {
         presentation_id: generatedContent.presentation_id,
-        presentation_url: `https://api.presenton.ai${generatedContent.path}`,
-        edit_url: `https://api.presenton.ai${generatedContent.edit_path}`,
+        presentation_url: generatedContent.path, // Already full URL from Presenton
+        edit_url: generatedContent.edit_path, // Already full URL from Presenton
         raw_response: generatedContent
       },
       gate_settings_json: data.gates || [],
@@ -99,10 +119,10 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
       slides: [], // Presenton creates presentation files directly
       metadata: {
         title: deck.title,
-        slideCount: generatedContent.n_slides || 8,
+        slideCount: 8, // We requested 8 slides from Presenton
         theme: 'professional',
-        presentation_url: `https://api.presenton.ai${generatedContent.path}`,
-        edit_url: `https://api.presenton.ai${generatedContent.edit_path}`,
+        presentation_url: generatedContent.path, // Already full URL from Presenton
+        edit_url: generatedContent.edit_path, // Already full URL from Presenton
         presentation_id: generatedContent.presentation_id
       }
     };
