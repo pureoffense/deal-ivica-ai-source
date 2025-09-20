@@ -51,12 +51,27 @@ export const getUserDeckStats = async (userId: string) => {
   try {
     const decks = await getUserDecks(userId);
     
+    // Calculate hours saved based on credits consumed
+    // Each credit represents time/effort saved, assume 1 credit = 30 minutes saved
+    const totalCreditsConsumed = decks.reduce((total, deck) => {
+      const credits = deck.generated_content_json?.raw_response?.credits_consumed || 0;
+      return total + credits;
+    }, 0);
+    
+    const hoursSaved = Math.round(totalCreditsConsumed * 0.5); // 0.5 hours per credit
+    
     const stats = {
       totalPresentations: decks.length,
       activeViews: 0, // TODO: Implement view tracking
       engagedUsers: 0, // TODO: Implement user engagement tracking  
-      hoursSaved: Math.round(decks.length * 2.5) // Estimate 2.5 hours saved per presentation
+      hoursSaved: hoursSaved || Math.round(decks.length * 2.5) // Fallback to estimate if no credits data
     };
+
+    console.log('Stats calculation:', {
+      totalDecks: decks.length,
+      totalCreditsConsumed,
+      hoursSaved
+    });
 
     return stats;
   } catch (error) {

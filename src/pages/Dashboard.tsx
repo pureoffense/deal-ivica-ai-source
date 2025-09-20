@@ -13,7 +13,9 @@ import {
   Clock,
   Download,
   Edit,
-  Calendar
+  Calendar,
+  Search,
+  SortAsc
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_CONFIG } from '@/constants';
@@ -68,6 +70,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
 
   // Fetch user decks and stats
   useEffect(() => {
@@ -139,6 +143,31 @@ const Dashboard = () => {
     // Navigate to deck creation with selected template
     navigate(`/deck/create?template=${templateName}`);
   };
+
+  // Filter and sort presentations
+  const filteredAndSortedDecks = decks
+    .filter(deck => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        deck.title.toLowerCase().includes(query) ||
+        deck.prompt_text.toLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'date-asc':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'title-asc':
+          return a.title.localeCompare(b.title);
+        case 'title-desc':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -376,7 +405,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-gray-900">Your Presentations</h3>
             {decks.length > 0 && (
               <Link to="/deck/create" className="text-primary hover:text-indigo-700 text-sm font-medium">
@@ -384,6 +413,60 @@ const Dashboard = () => {
               </Link>
             )}
           </div>
+
+          {/* Search and Sort Controls */}
+          {!loading && !error && decks.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              {/* Search */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search presentations by title or content..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              
+              {/* Sort */}
+              <div className="relative">
+                <SortAsc className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary appearance-none bg-white min-w-[200px]"
+                >
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="title-asc">Title A-Z</option>
+                  <option value="title-desc">Title Z-A</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Results Summary */}
+          {!loading && !error && decks.length > 0 && (
+            <div className="text-sm text-gray-600 mb-4">
+              {searchQuery ? (
+                <span>
+                  Showing {filteredAndSortedDecks.length} of {decks.length} presentations
+                  {filteredAndSortedDecks.length === 0 && ' - try a different search'}
+                </span>
+              ) : (
+                <span>Showing all {decks.length} presentations</span>
+              )}
+            </div>
+          )}
 
           {/* Error State */}
           {error && (
@@ -427,10 +510,37 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* Empty Search Results */}
+          {!loading && !error && decks.length > 0 && filteredAndSortedDecks.length === 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="text-center py-12">
+                <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                  No presentations match your search
+                </h4>
+                <p className="text-gray-600 mb-6">
+                  Try adjusting your search terms or create a new presentation.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Clear Search
+                  </button>
+                  <Link to="/deck/create" className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-indigo-700 transition-colors">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Decks Grid */}
-          {!loading && !error && decks.length > 0 && (
+          {!loading && !error && filteredAndSortedDecks.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {decks.map((deck) => (
+              {filteredAndSortedDecks.map((deck) => (
                 <motion.div
                   key={deck.id}
                   initial={{ opacity: 0, scale: 0.95 }}

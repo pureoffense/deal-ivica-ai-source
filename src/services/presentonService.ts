@@ -241,22 +241,35 @@ export async function getAllTemplates() {
     // If the API returns a simple array of template names, transform to objects
     const templates = Array.isArray(response.data) ? response.data : [];
     
-    // Transform string templates to objects with additional info
+    // Transform templates from API response to enhanced objects
     const enhancedTemplates = templates.map((template: any) => {
       if (typeof template === 'string') {
+        // Handle simple string templates
         return {
           id: template,
           name: template,
           displayName: formatTemplateName(template),
-          description: getTemplateDescription(template)
+          description: getTemplateDescription(template),
+          preview: null
+        };
+      } else if (template && typeof template === 'object') {
+        // Handle API objects - use 'id' field as the actual template name for API calls
+        const templateName = template.id || template.name || 'general';
+        return {
+          id: templateName,
+          name: templateName, // Use ID as the template name for API calls
+          displayName: template.displayName || formatTemplateName(templateName),
+          description: template.description || getTemplateDescription(templateName),
+          preview: template.preview || template.preview_url || null
         };
       }
+      // Fallback for unexpected data
       return {
-        id: template.id || template.name,
-        name: template.name,
-        displayName: template.displayName || formatTemplateName(template.name),
-        description: template.description || getTemplateDescription(template.name),
-        preview: template.preview || null
+        id: 'general',
+        name: 'general',
+        displayName: 'General',
+        description: 'Versatile template suitable for any presentation type',
+        preview: null
       };
     });
     
