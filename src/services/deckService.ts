@@ -225,7 +225,7 @@ export const logDeckView = async (deckId: string) => {
     console.log('Logging view for deck:', deckId);
     
     // Use the PostgreSQL function for efficient view count increment
-    const { data, error } = await supabase.rpc(
+    const { error } = await supabase.rpc(
       'increment_view_count',
       { deck_id: deckId }
     );
@@ -234,7 +234,7 @@ export const logDeckView = async (deckId: string) => {
       console.error('Error logging deck view with function:', error);
       
       // Fallback to upsert if function fails
-      const { data: upsertData, error: upsertError } = await supabase
+      const { error: upsertError } = await supabase
         .from('analytics')
         .upsert(
           {

@@ -1,4 +1,3 @@
-import React from 'react';
 
 export function EnvDebug() {
   // Get all environment variables that Vite exposes

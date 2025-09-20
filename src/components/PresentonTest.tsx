@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { generatePresentation, getConfigStatus, testAuthentication } from '../services/presentonService';
 
 interface PresentonTestProps {

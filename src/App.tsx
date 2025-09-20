@@ -15,6 +15,7 @@ const Signup = lazy(() => import('@/pages/Signup'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DeckCreation = lazy(() => import('@/pages/DeckCreation'));
+const DeckView = lazy(() => import('@/pages/DeckView'));
 
 function App() {
   return (
@@ -44,6 +45,10 @@ function App() {
                     <DeckCreation />
                   </ProtectedRoute>
                 } 
+              />
+              <Route 
+                path="/deck/:id/view" 
+                element={<DeckView />}
               />
               {/* Catch all route */}
               <Route path="*" element={

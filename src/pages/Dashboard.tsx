@@ -563,6 +563,13 @@ const Dashboard = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <Link
+                      to={`/deck/${deck.id}/view`}
+                      className="flex items-center px-3 py-2 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                    >
+                      <FileText className="w-3 h-3 mr-1" />
+                      View
+                    </Link>
                     {deck.generated_content_json?.presentation_url && (
                       <a
                         href={deck.generated_content_json.presentation_url}

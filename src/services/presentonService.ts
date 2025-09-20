@@ -80,7 +80,7 @@ presentonAPI.interceptors.request.use(
       url: config.url,
       fullUrl: `${config.baseURL}${config.url}`,
       hasAuth: !!config.headers.Authorization,
-      authHeader: config.headers.Authorization ? `${config.headers.Authorization.substring(0, 20)}...` : 'missing',
+      authHeader: config.headers.Authorization ? `${String(config.headers.Authorization).substring(0, 20)}...` : 'missing',
       body: config.data
     });
     return config;
