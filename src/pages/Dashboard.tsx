@@ -21,6 +21,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { APP_CONFIG } from '@/constants';
 import { getUserDecks, getUserDeckStats } from '@/services/deckService';
 import { getAllTemplates } from '@/services/presentonService';
+import { PresentationViewer } from '@/components/ui/PresentationViewer';
 
 // Type for deck data
 interface Deck {
@@ -74,6 +75,8 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
 
   // Fetch user decks and stats
   useEffect(() => {
@@ -151,6 +154,16 @@ const Dashboard = () => {
   const handleGenerateWithTemplate = (templateName: string) => {
     // Navigate to deck creation with selected template
     navigate(`/deck/create?template=${templateName}`);
+  };
+
+  const handleViewPresentation = (deck: Deck) => {
+    setSelectedDeck(deck);
+    setViewerOpen(true);
+  };
+
+  const handleCloseViewer = () => {
+    setViewerOpen(false);
+    setSelectedDeck(null);
   };
 
   // Filter and sort presentations
@@ -589,13 +602,13 @@ const Dashboard = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Link
-                      to={`/deck/${deck.id}/view`}
+                    <button
+                      onClick={() => handleViewPresentation(deck)}
                       className="flex items-center px-3 py-2 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
                     >
                       <FileText className="w-3 h-3 mr-1" />
                       View
-                    </Link>
+                    </button>
                     {deck.generated_content_json?.presentation_url && (
                       <a
                         href={deck.generated_content_json.presentation_url}
@@ -625,6 +638,17 @@ const Dashboard = () => {
           )}
         </motion.div>
       </main>
+      
+      {/* Presentation Viewer Modal */}
+      {selectedDeck && (
+        <PresentationViewer
+          isOpen={viewerOpen}
+          onClose={handleCloseViewer}
+          title={selectedDeck.title}
+          presentationUrl={selectedDeck.generated_content_json?.presentation_url}
+          editUrl={selectedDeck.generated_content_json?.edit_url}
+        />
+      )}
     </div>
   );
 };

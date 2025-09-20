@@ -153,7 +153,7 @@ export async function generatePresentation(request: PresentationRequest): Promis
       n_slides: 8,
       language: 'English',
       template: 'general', // Default to 'general' - valid options: 'general', 'modern', 'standard', 'swift'
-      export_as: 'pptx',
+      export_as: 'pdf',
       tone: 'professional',
       web_search: false,
       ...request

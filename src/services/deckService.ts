@@ -162,7 +162,7 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
         n_slides: 8,
         language: 'English',
         template: data.template || 'general', // Use provided template or fallback to general
-        export_as: 'pptx',
+        export_as: 'pdf',
         tone: 'professional'
       });
       
