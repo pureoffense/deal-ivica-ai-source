@@ -96,10 +96,17 @@ const Dashboard = () => {
         ]);
         
         setDecks(userDecks);
-        setStats(userStats);
+        
+        // Ensure stats totalPresentations matches actual deck count
+        const correctedStats = {
+          ...userStats,
+          totalPresentations: userDecks.length // Use actual deck count
+        };
+        setStats(correctedStats);
         
         console.log('Loaded decks:', userDecks.length);
-        console.log('Stats:', userStats);
+        console.log('Stats (corrected):', correctedStats);
+        console.log('Original stats from API:', userStats);
         
       } catch (err) {
         console.error('Error fetching user data:', err);

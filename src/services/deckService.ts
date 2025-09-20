@@ -49,14 +49,15 @@ export const getUserDecks = async (userId: string) => {
 // Get deck statistics for a user with real analytics data
 export const getUserDeckStats = async (userId: string) => {
   try {
-    // Get user's decks and their analytics in a single query
+    // Get user's decks and their analytics in a single query using LEFT JOIN
+    // This ensures we get all decks even if they don't have analytics yet
     const { data: deckAnalytics, error } = await supabase
       .from('decks')
       .select(`
         id,
         generated_content_json,
         created_at,
-        analytics (
+        analytics!left (
           view_count,
           engaged_users,
           last_viewed_at
