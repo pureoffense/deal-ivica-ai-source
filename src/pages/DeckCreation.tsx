@@ -204,11 +204,11 @@ const DeckCreation = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
                   {templates.map((template) => (
                     <label
                       key={template.id}
-                      className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none ${
+                      className={`relative flex flex-col cursor-pointer rounded-lg border overflow-hidden focus:outline-none transition-all ${
                         selectedTemplate === template.name
                           ? 'border-primary bg-primary/5 ring-2 ring-primary'
                           : 'border-gray-300 bg-white hover:bg-gray-50'
@@ -220,23 +220,47 @@ const DeckCreation = () => {
                         value={template.name}
                         className="sr-only"
                       />
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-900">
-                              {template.displayName}
-                            </div>
-                            <div className="text-gray-500">
-                              {template.description}
-                            </div>
+                      
+                      {/* Preview Image */}
+                      {template.preview && (
+                        <div className="w-full h-24 bg-gray-50 flex items-center justify-center overflow-hidden">
+                          <img 
+                            src={template.preview} 
+                            alt={`${template.displayName} template preview`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Hide image on error and show placeholder
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="p-4 flex-1">
+                        <div className="text-sm">
+                          <div className="font-medium text-gray-900 mb-1">
+                            {template.displayName}
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            {template.description}
                           </div>
                         </div>
                       </div>
+                      
                       <div className={`absolute -inset-px rounded-lg border-2 pointer-events-none ${
                         selectedTemplate === template.name
                           ? 'border-primary'
                           : 'border-transparent'
                       }`} />
+                      
+                      {/* Selected indicator */}
+                      {selectedTemplate === template.name && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
                     </label>
                   ))}
                 </div>

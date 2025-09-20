@@ -378,21 +378,38 @@ const Dashboard = () => {
                   key={template.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group cursor-pointer"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all group cursor-pointer"
                   onClick={() => handleGenerateWithTemplate(template.name)}
                 >
                   <div className="flex flex-col h-full">
-                    <div className="flex-1 mb-3">
-                      <h4 className="text-md font-semibold text-gray-900 mb-2">
-                        {template.displayName}
-                      </h4>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {template.description}
-                      </p>
+                    {/* Preview Image */}
+                    {template.preview && (
+                      <div className="w-full h-20 bg-gray-50 flex items-center justify-center overflow-hidden">
+                        <img 
+                          src={template.preview} 
+                          alt={`${template.displayName} template preview`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          onError={(e) => {
+                            // Hide image on error
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="p-4 flex-1">
+                      <div className="flex-1 mb-3">
+                        <h4 className="text-md font-semibold text-gray-900 mb-2">
+                          {template.displayName}
+                        </h4>
+                        <p className="text-xs text-gray-600 line-clamp-2">
+                          {template.description}
+                        </p>
+                      </div>
+                      <button className="text-xs bg-primary/10 text-primary px-3 py-2 rounded-lg hover:bg-primary/20 transition-colors group-hover:bg-primary group-hover:text-white w-full">
+                        Use Template
+                      </button>
                     </div>
-                    <button className="text-xs bg-primary/10 text-primary px-3 py-2 rounded-lg hover:bg-primary/20 transition-colors group-hover:bg-primary group-hover:text-white">
-                      Use Template
-                    </button>
                   </div>
                 </motion.div>
               ))}

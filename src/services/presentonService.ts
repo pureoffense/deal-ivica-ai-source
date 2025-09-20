@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { generateTemplatePreviewDataUrl } from '@/lib/templatePreviews';
 
 // Presenton API configuration from environment variables
 const API_KEY = import.meta.env.VITE_PRESENTON_API_KEY as string;
@@ -250,7 +251,7 @@ export async function getAllTemplates() {
           name: template,
           displayName: formatTemplateName(template),
           description: getTemplateDescription(template),
-          preview: null
+          preview: generateTemplatePreviewDataUrl(template)
         };
       } else if (template && typeof template === 'object') {
         // Handle API objects - use 'id' field as the actual template name for API calls
@@ -260,7 +261,7 @@ export async function getAllTemplates() {
           name: templateName, // Use ID as the template name for API calls
           displayName: template.displayName || formatTemplateName(templateName),
           description: template.description || getTemplateDescription(templateName),
-          preview: template.preview || template.preview_url || null
+          preview: template.preview || template.preview_url || generateTemplatePreviewDataUrl(templateName)
         };
       }
       // Fallback for unexpected data
@@ -316,25 +317,29 @@ function getFallbackTemplates() {
       id: 'general',
       name: 'general',
       displayName: 'General',
-      description: 'Versatile template suitable for any presentation type'
+      description: 'Versatile template suitable for any presentation type',
+      preview: generateTemplatePreviewDataUrl('general')
     },
     {
       id: 'modern',
       name: 'modern',
       displayName: 'Modern',
-      description: 'Contemporary design with clean lines and bold typography'
+      description: 'Contemporary design with clean lines and bold typography',
+      preview: generateTemplatePreviewDataUrl('modern')
     },
     {
       id: 'standard',
       name: 'standard',
       displayName: 'Standard',
-      description: 'Classic business presentation layout'
+      description: 'Classic business presentation layout',
+      preview: generateTemplatePreviewDataUrl('standard')
     },
     {
       id: 'swift',
       name: 'swift',
       displayName: 'Swift',
-      description: 'Minimalist template for quick, focused presentations'
+      description: 'Minimalist template for quick, focused presentations',
+      preview: generateTemplatePreviewDataUrl('swift')
     }
   ];
 }
