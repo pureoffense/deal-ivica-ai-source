@@ -5,6 +5,11 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    headers: {
+      'Content-Security-Policy': "default-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline';"
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
