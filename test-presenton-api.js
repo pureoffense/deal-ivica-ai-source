@@ -1,7 +1,8 @@
 // Test script to verify Presenton API configuration
 // Run with: node test-presenton-api.js
 
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
 async function testPresentonAPI() {
   const apiKey = process.env.PRESENTON_API_KEY;

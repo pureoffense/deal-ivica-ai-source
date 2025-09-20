@@ -14,13 +14,19 @@ export default async function handler(req, res) {
 
   try {
     console.log('Presenton proxy request body:', req.body);
+    console.log('Environment check:', {
+      apiKeySet: !!process.env.PRESENTON_API_KEY,
+      apiKeyPreview: process.env.PRESENTON_API_KEY ? `${process.env.PRESENTON_API_KEY.substring(0, 15)}...` : 'NOT SET',
+      apiUrl: process.env.PRESENTON_API_URL || 'NOT SET'
+    });
     
     // Check for API key
     const apiKey = process.env.PRESENTON_API_KEY;
     const apiUrl = process.env.PRESENTON_API_URL || 'https://api.presenton.ai';
     
     if (!apiKey) {
-      console.warn('PRESENTON_API_KEY not configured, proceeding without authentication');
+      console.error('❌ PRESENTON_API_KEY not configured!');
+      throw new Error('API key not configured. Please set PRESENTON_API_KEY in Vercel environment variables.');
     }
     
     // Map your app's request to Presenton's API format
