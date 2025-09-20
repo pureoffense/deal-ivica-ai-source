@@ -46,29 +46,79 @@ export const getUserDecks = async (userId: string) => {
   }
 };
 
-// Get deck statistics for a user
+// Get deck statistics for a user with real analytics data
 export const getUserDeckStats = async (userId: string) => {
   try {
-    const decks = await getUserDecks(userId);
+    // Get user's decks and their analytics in a single query
+    const { data: deckAnalytics, error } = await supabase
+      .from('decks')
+      .select(`
+        id,
+        generated_content_json,
+        created_at,
+        analytics (
+          view_count,
+          engaged_users,
+          last_viewed_at
+        )
+      `)
+      .eq('creator_id', userId);
+
+    if (error) {
+      console.error('Error fetching deck stats:', error);
+      throw error;
+    }
+
+    const decks = deckAnalytics || [];
+    
+    // Calculate total views and engaged users from real analytics data
+    let totalViews = 0;
+    let totalEngagedUsers = 0;
+    let recentlyViewedCount = 0;
+    
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    decks.forEach(deck => {
+      const analytics = deck.analytics?.[0];
+      if (analytics) {
+        totalViews += analytics.view_count || 0;
+        totalEngagedUsers += analytics.engaged_users || 0;
+        
+        // Count decks viewed in the last week as "active views"
+        if (analytics.last_viewed_at) {
+          const lastViewed = new Date(analytics.last_viewed_at);
+          if (lastViewed >= oneWeekAgo) {
+            recentlyViewedCount++;
+          }
+        }
+      }
+    });
     
     // Calculate hours saved based on credits consumed
-    // Each credit represents time/effort saved, assume 1 credit = 30 minutes saved
     const totalCreditsConsumed = decks.reduce((total, deck) => {
       const credits = deck.generated_content_json?.raw_response?.credits_consumed || 0;
       return total + credits;
     }, 0);
     
-    const hoursSaved = Math.round(totalCreditsConsumed * 0.5); // 0.5 hours per credit
+    // Each credit represents time/effort saved, assume 1 credit = 30 minutes saved
+    const hoursSaved = totalCreditsConsumed > 0 
+      ? Math.round(totalCreditsConsumed * 0.5)
+      : Math.round(decks.length * 2.5); // Fallback: assume 2.5 hours saved per presentation
     
     const stats = {
       totalPresentations: decks.length,
-      activeViews: 0, // TODO: Implement view tracking
-      engagedUsers: 0, // TODO: Implement user engagement tracking  
-      hoursSaved: hoursSaved || Math.round(decks.length * 2.5) // Fallback to estimate if no credits data
+      activeViews: recentlyViewedCount, // Presentations viewed in the last week
+      totalViews: totalViews, // Total view count across all presentations
+      engagedUsers: totalEngagedUsers, // Total engaged users across all presentations
+      hoursSaved: hoursSaved
     };
 
-    console.log('Stats calculation:', {
+    console.log('Enhanced stats calculation:', {
       totalDecks: decks.length,
+      totalViews,
+      totalEngagedUsers,
+      recentlyViewedCount,
       totalCreditsConsumed,
       hoursSaved
     });
@@ -80,6 +130,7 @@ export const getUserDeckStats = async (userId: string) => {
     return {
       totalPresentations: 0,
       activeViews: 0,
+      totalViews: 0,
       engagedUsers: 0,
       hoursSaved: 0
     };
@@ -295,6 +346,101 @@ export const getDeckAnalytics = async (deckId: string) => {
       engaged_users: 0,
       last_viewed_at: null,
       created_at: null
+    };
+  }
+};
+
+// Get engagement insights for analytics dashboard
+export const getEngagementInsights = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('decks')
+      .select(`
+        id,
+        title,
+        created_at,
+        analytics (
+          view_count,
+          engaged_users,
+          last_viewed_at,
+          created_at
+        )
+      `)
+      .eq('creator_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Calculate insights
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const insights = {
+      topPerforming: [] as Array<{id: string, title: string, views: number}>,
+      recentActivity: [] as Array<{id: string, title: string, lastViewed: string}>,
+      growthMetrics: {
+        viewsThisWeek: 0,
+        viewsLastWeek: 0,
+        newPresentationsThisMonth: 0
+      }
+    };
+    
+    // Process each deck
+    data?.forEach(deck => {
+      const analytics = deck.analytics?.[0];
+      const createdAt = new Date(deck.created_at);
+      
+      // Top performing presentations
+      if (analytics?.view_count && analytics.view_count > 0) {
+        insights.topPerforming.push({
+          id: deck.id,
+          title: deck.title,
+          views: analytics.view_count
+        });
+      }
+      
+      // Recent activity
+      if (analytics?.last_viewed_at) {
+        const lastViewed = new Date(analytics.last_viewed_at);
+        if (lastViewed >= oneWeekAgo) {
+          insights.recentActivity.push({
+            id: deck.id,
+            title: deck.title,
+            lastViewed: analytics.last_viewed_at
+          });
+        }
+      }
+      
+      // Growth metrics
+      if (createdAt >= oneMonthAgo) {
+        insights.growthMetrics.newPresentationsThisMonth++;
+      }
+    });
+    
+    // Sort and limit results
+    insights.topPerforming = insights.topPerforming
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5);
+    
+    insights.recentActivity = insights.recentActivity
+      .sort((a, b) => new Date(b.lastViewed).getTime() - new Date(a.lastViewed).getTime())
+      .slice(0, 10);
+    
+    return insights;
+    
+  } catch (error) {
+    console.error('getEngagementInsights error:', error);
+    return {
+      topPerforming: [],
+      recentActivity: [],
+      growthMetrics: {
+        viewsThisWeek: 0,
+        viewsLastWeek: 0,
+        newPresentationsThisMonth: 0
+      }
     };
   }
 };

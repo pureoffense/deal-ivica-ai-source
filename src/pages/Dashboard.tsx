@@ -43,6 +43,7 @@ interface Deck {
 interface DeckStats {
   totalPresentations: number;
   activeViews: number;
+  totalViews?: number; // Optional for backward compatibility
   engagedUsers: number;
   hoursSaved: number;
 }
@@ -63,6 +64,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState<DeckStats>({
     totalPresentations: 0,
     activeViews: 0,
+    totalViews: 0,
     engagedUsers: 0,
     hoursSaved: 0
   });
@@ -184,8 +186,8 @@ const Dashboard = () => {
       color: 'text-blue-600 bg-blue-100'
     },
     {
-      name: 'Active Views',
-      value: loading ? '-' : stats.activeViews.toString(),
+      name: 'Total Views',
+      value: loading ? '-' : (stats.totalViews || stats.activeViews).toString(),
       icon: BarChart3,
       color: 'text-green-600 bg-green-100'
     },
