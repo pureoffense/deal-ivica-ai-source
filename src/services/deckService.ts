@@ -219,6 +219,147 @@ function extractTitleFromPrompt(prompt: string): string {
     : firstSentence;
 }
 
+// Analytics functions
+export const logDeckView = async (deckId: string) => {
+  try {
+    console.log('Logging view for deck:', deckId);
+    
+    // Use the PostgreSQL function for efficient view count increment
+    const { data, error } = await supabase.rpc(
+      'increment_view_count',
+      { deck_id: deckId }
+    );
+    
+    if (error) {
+      console.error('Error logging deck view with function:', error);
+      
+      // Fallback to upsert if function fails
+      const { data: upsertData, error: upsertError } = await supabase
+        .from('analytics')
+        .upsert(
+          {
+            deck_id: deckId,
+            view_count: 1,
+            last_viewed_at: new Date().toISOString()
+          },
+          {
+            onConflict: 'deck_id',
+            ignoreDuplicates: false
+          }
+        )
+        .select();
+      
+      if (upsertError) {
+        console.error('Error with fallback upsert:', upsertError);
+        return false;
+      }
+    }
+    
+    console.log('View logged successfully for deck:', deckId);
+    return true;
+    
+  } catch (error) {
+    console.error('logDeckView error:', error);
+    return false;
+  }
+};
+
+export const getDeckAnalytics = async (deckId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('analytics')
+      .select('*')
+      .eq('deck_id', deckId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No analytics record exists yet
+        return {
+          deck_id: deckId,
+          view_count: 0,
+          engaged_users: 0,
+          last_viewed_at: null,
+          created_at: null
+        };
+      }
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('getDeckAnalytics error:', error);
+    return {
+      deck_id: deckId,
+      view_count: 0,
+      engaged_users: 0,
+      last_viewed_at: null,
+      created_at: null
+    };
+  }
+};
+
+export const getAllAnalytics = async (userId: string) => {
+  try {
+    // Get analytics for all user's decks using a join
+    const { data, error } = await supabase
+      .from('decks')
+      .select(`
+        id,
+        title,
+        created_at,
+        analytics (
+          view_count,
+          engaged_users,
+          last_viewed_at
+        )
+      `)
+      .eq('creator_id', userId);
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Calculate totals
+    const totals = {
+      totalViews: 0,
+      totalEngagedUsers: 0,
+      totalDecks: data?.length || 0
+    };
+    
+    const analyticsData = data?.map(deck => ({
+      ...deck,
+      analytics: deck.analytics?.[0] || {
+        view_count: 0,
+        engaged_users: 0,
+        last_viewed_at: null
+      }
+    })) || [];
+    
+    // Sum up totals
+    analyticsData.forEach(deck => {
+      totals.totalViews += deck.analytics.view_count || 0;
+      totals.totalEngagedUsers += deck.analytics.engaged_users || 0;
+    });
+    
+    return {
+      decks: analyticsData,
+      totals
+    };
+    
+  } catch (error) {
+    console.error('getAllAnalytics error:', error);
+    return {
+      decks: [],
+      totals: {
+        totalViews: 0,
+        totalEngagedUsers: 0,
+        totalDecks: 0
+      }
+    };
+  }
+};
+
 // Mock deck creation for development/fallback
 async function createMockDeck(data: CreateDeckRequest): Promise<DeckResponse> {
   const { data: { user } } = await supabase.auth.getUser();
