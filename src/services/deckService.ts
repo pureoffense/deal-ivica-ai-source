@@ -167,7 +167,13 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
       });
       
       generatedContent = presentationResponse;
-      console.log('Presenton generation completed:', generatedContent);
+      console.log('🎯 Presenton generation completed:', generatedContent);
+      console.log('📍 Extracted URLs for storage:', {
+        presentation_id: generatedContent.presentation_id,
+        presentation_url: generatedContent.path,
+        edit_url: generatedContent.edit_path,
+        full_response: generatedContent
+      });
     } else {
       // Use Vercel proxy for production (API key hidden in serverless function)
       console.log('Using Presenton API via Vercel proxy for production...');
