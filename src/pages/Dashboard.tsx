@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_CONFIG } from '@/constants';
-import { PresentonTest, EnvDebug } from '@/components';
+import { PresentonTest } from '@/components';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -192,21 +192,11 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Environment Debug - Temporary for debugging */}
+        {/* Presenton API Test - Remove this once everything is working */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <EnvDebug />
-        </motion.div>
-
-        {/* Presenton API Test - Temporary for testing */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
           className="mb-8"
         >
           <PresentonTest />
@@ -216,7 +206,7 @@ const Dashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.4 }}
         >
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h3>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
