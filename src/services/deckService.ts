@@ -6,6 +6,7 @@ import { generatePresentation } from './presentonService';
 
 interface CreateDeckRequest {
   prompt: string;
+  template?: string;
   gates?: string[];
 }
 
@@ -22,6 +23,53 @@ interface DeckResponse {
     presentation_id?: string;
   };
 }
+
+// Get all decks for a specific user
+export const getUserDecks = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('decks')
+      .select('*')
+      .eq('creator_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user decks:', error);
+      throw new Error(`Failed to fetch decks: ${error.message}`);
+    }
+
+    console.log(`Fetched ${data?.length || 0} decks for user ${userId}`);
+    return data || [];
+  } catch (error) {
+    console.error('getUserDecks error:', error);
+    throw error;
+  }
+};
+
+// Get deck statistics for a user
+export const getUserDeckStats = async (userId: string) => {
+  try {
+    const decks = await getUserDecks(userId);
+    
+    const stats = {
+      totalPresentations: decks.length,
+      activeViews: 0, // TODO: Implement view tracking
+      engagedUsers: 0, // TODO: Implement user engagement tracking  
+      hoursSaved: Math.round(decks.length * 2.5) // Estimate 2.5 hours saved per presentation
+    };
+
+    return stats;
+  } catch (error) {
+    console.error('getUserDeckStats error:', error);
+    // Return default stats if error
+    return {
+      totalPresentations: 0,
+      activeViews: 0,
+      engagedUsers: 0,
+      hoursSaved: 0
+    };
+  }
+};
 
 export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse> => {
   console.log('Creating deck with data:', data);
@@ -46,7 +94,7 @@ export const createDeck = async (data: CreateDeckRequest): Promise<DeckResponse>
         content: data.prompt,
         n_slides: 8,
         language: 'English',
-        template: 'general', // Valid Presenton template
+        template: data.template || 'general', // Use provided template or fallback to general
         export_as: 'pptx',
         tone: 'professional'
       });

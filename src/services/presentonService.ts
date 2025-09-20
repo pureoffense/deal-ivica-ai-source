@@ -224,6 +224,109 @@ export async function testAuthentication(): Promise<boolean> {
 }
 
 /**
+ * Get all available templates from Presenton API
+ * @returns Promise resolving to array of template objects
+ */
+export async function getAllTemplates() {
+  try {
+    // Validate configuration before making request
+    validateConfig();
+    
+    console.log('🎨 Fetching available templates from Presenton API...');
+    
+    const response = await presentonAPI.get('/api/v1/ppt/template/all');
+    
+    console.log('✅ Templates fetched successfully:', response.data);
+    
+    // If the API returns a simple array of template names, transform to objects
+    const templates = Array.isArray(response.data) ? response.data : [];
+    
+    // Transform string templates to objects with additional info
+    const enhancedTemplates = templates.map((template: any) => {
+      if (typeof template === 'string') {
+        return {
+          id: template,
+          name: template,
+          displayName: formatTemplateName(template),
+          description: getTemplateDescription(template)
+        };
+      }
+      return {
+        id: template.id || template.name,
+        name: template.name,
+        displayName: template.displayName || formatTemplateName(template.name),
+        description: template.description || getTemplateDescription(template.name),
+        preview: template.preview || null
+      };
+    });
+    
+    return enhancedTemplates;
+    
+  } catch (error) {
+    console.error('💥 Failed to fetch templates:', error);
+    
+    // Return fallback templates if API fails
+    console.log('Using fallback templates');
+    return getFallbackTemplates();
+  }
+}
+
+/**
+ * Format template name for display
+ */
+function formatTemplateName(name: string): string {
+  return name.charAt(0).toUpperCase() + name.slice(1).replace(/[-_]/g, ' ');
+}
+
+/**
+ * Get description for template
+ */
+function getTemplateDescription(name: string): string {
+  const descriptions: Record<string, string> = {
+    general: 'Versatile template suitable for any presentation type',
+    modern: 'Contemporary design with clean lines and bold typography',
+    standard: 'Classic business presentation layout',
+    swift: 'Minimalist template for quick, focused presentations',
+    professional: 'Formal business template with corporate styling',
+    creative: 'Dynamic template with creative elements and vibrant colors'
+  };
+  
+  return descriptions[name.toLowerCase()] || 'Professional presentation template';
+}
+
+/**
+ * Get fallback templates if API fails
+ */
+function getFallbackTemplates() {
+  return [
+    {
+      id: 'general',
+      name: 'general',
+      displayName: 'General',
+      description: 'Versatile template suitable for any presentation type'
+    },
+    {
+      id: 'modern',
+      name: 'modern',
+      displayName: 'Modern',
+      description: 'Contemporary design with clean lines and bold typography'
+    },
+    {
+      id: 'standard',
+      name: 'standard',
+      displayName: 'Standard',
+      description: 'Classic business presentation layout'
+    },
+    {
+      id: 'swift',
+      name: 'swift',
+      displayName: 'Swift',
+      description: 'Minimalist template for quick, focused presentations'
+    }
+  ];
+}
+
+/**
  * Get API configuration status
  * @returns Object with configuration status
  */

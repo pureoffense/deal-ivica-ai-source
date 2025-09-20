@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, 
   Plus, 
@@ -9,15 +10,135 @@ import {
   Sparkles,
   BarChart3,
   Users,
-  Clock
+  Clock,
+  Download,
+  Edit,
+  Calendar
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_CONFIG } from '@/constants';
-import { PresentonTest } from '@/components';
+import { getUserDecks, getUserDeckStats } from '@/services/deckService';
+import { getAllTemplates } from '@/services/presentonService';
+
+// Type for deck data
+interface Deck {
+  id: string;
+  title: string;
+  prompt_text: string;
+  created_at: string;
+  updated_at: string;
+  unique_url: string;
+  generated_content_json: {
+    presentation_id?: string;
+    presentation_url?: string;
+    edit_url?: string;
+    raw_response?: any;
+  };
+  gate_settings_json: string[];
+}
+
+// Type for stats
+interface DeckStats {
+  totalPresentations: number;
+  activeViews: number;
+  engagedUsers: number;
+  hoursSaved: number;
+}
+
+// Type for templates
+interface Template {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  preview?: string | null;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuthStore();
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [stats, setStats] = useState<DeckStats>({
+    totalPresentations: 0,
+    activeViews: 0,
+    engagedUsers: 0,
+    hoursSaved: 0
+  });
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch user decks and stats
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Fetching decks for user:', user.id);
+        
+        // Fetch decks and stats in parallel
+        const [userDecks, userStats] = await Promise.all([
+          getUserDecks(user.id),
+          getUserDeckStats(user.id)
+        ]);
+        
+        setDecks(userDecks);
+        setStats(userStats);
+        
+        console.log('Loaded decks:', userDecks.length);
+        console.log('Stats:', userStats);
+        
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user?.id]);
+
+  // Fetch templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setTemplatesLoading(true);
+        console.log('Fetching templates...');
+        const availableTemplates = await getAllTemplates();
+        setTemplates(availableTemplates);
+        console.log('Loaded templates:', availableTemplates.length);
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+        // Templates are not critical, so don't show error to user
+        // Just use fallback templates
+        setTemplates([
+          {
+            id: 'general',
+            name: 'general',
+            displayName: 'General',
+            description: 'Versatile template suitable for any presentation type'
+          }
+        ]);
+      } finally {
+        setTemplatesLoading(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
+
+  const handleGenerateWithTemplate = (templateName: string) => {
+    // Navigate to deck creation with selected template
+    navigate(`/deck/create?template=${templateName}`);
+  };
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -26,28 +147,28 @@ const Dashboard = () => {
     }
   };
 
-  const stats = [
+  const statsCards = [
     {
       name: 'Total Presentations',
-      value: '0',
+      value: loading ? '-' : stats.totalPresentations.toString(),
       icon: FileText,
       color: 'text-blue-600 bg-blue-100'
     },
     {
       name: 'Active Views',
-      value: '0',
+      value: loading ? '-' : stats.activeViews.toString(),
       icon: BarChart3,
       color: 'text-green-600 bg-green-100'
     },
     {
       name: 'Engaged Users',
-      value: '0',
+      value: loading ? '-' : stats.engagedUsers.toString(),
       icon: Users,
       color: 'text-purple-600 bg-purple-100'
     },
     {
       name: 'Hours Saved',
-      value: '0',
+      value: loading ? '-' : stats.hoursSaved.toString(),
       icon: Clock,
       color: 'text-orange-600 bg-orange-100'
     }
@@ -138,7 +259,10 @@ const Dashboard = () => {
               </p>
             </Link>
 
-            <button className="p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-left group">
+            <button 
+              onClick={() => document.getElementById('templates-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-left group"
+            >
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <FileText className="w-6 h-6 text-white" />
               </div>
@@ -146,7 +270,7 @@ const Dashboard = () => {
                 Browse Templates
               </h3>
               <p className="text-sm text-gray-600">
-                Choose from professional templates
+                Choose from {templates.length} professional templates
               </p>
             </button>
 
@@ -173,7 +297,7 @@ const Dashboard = () => {
         >
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Stats</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map((stat) => {
+            {statsCards.map((stat) => {
               const Icon = stat.icon;
               return (
                 <div key={stat.name} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -192,38 +316,170 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Presenton API Test - Remove this once everything is working */}
+        {/* Browse Templates Section */}
         <motion.div
+          id="templates-section"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="mb-8"
         >
-          <PresentonTest />
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">Browse Templates</h3>
+            <span className="text-sm text-gray-500">{templates.length} available</span>
+          </div>
+
+          {/* Templates Loading */}
+          {templatesLoading && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto mb-2"></div>
+                <p className="text-gray-600 text-sm">Loading templates...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Templates Grid */}
+          {!templatesLoading && templates.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {templates.map((template) => (
+                <motion.div
+                  key={template.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group cursor-pointer"
+                  onClick={() => handleGenerateWithTemplate(template.name)}
+                >
+                  <div className="flex flex-col h-full">
+                    <div className="flex-1 mb-3">
+                      <h4 className="text-md font-semibold text-gray-900 mb-2">
+                        {template.displayName}
+                      </h4>
+                      <p className="text-xs text-gray-600 line-clamp-2">
+                        {template.description}
+                      </p>
+                    </div>
+                    <button className="text-xs bg-primary/10 text-primary px-3 py-2 rounded-lg hover:bg-primary/20 transition-colors group-hover:bg-primary group-hover:text-white">
+                      Use Template
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
-        {/* Recent Activity */}
+
+        {/* Your Presentations */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
         >
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="text-center py-12">
-              <LayoutDashboard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">
-                No presentations yet
-              </h4>
-              <p className="text-gray-600 mb-6">
-                Create your first presentation to get started!
-              </p>
-              <Link to="/deck/create" className="btn-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Presentation
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">Your Presentations</h3>
+            {decks.length > 0 && (
+              <Link to="/deck/create" className="text-primary hover:text-indigo-700 text-sm font-medium">
+                Create New
               </Link>
-            </div>
+            )}
           </div>
+
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-red-700 text-sm">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="text-red-800 underline text-xs mt-1"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading your presentations...</p>
+              </div>
+            </div>
+          )}
+
+          {/* No Decks State */}
+          {!loading && !error && decks.length === 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="text-center py-12">
+                <LayoutDashboard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                  No presentations yet
+                </h4>
+                <p className="text-gray-600 mb-6">
+                  Create your first presentation to get started!
+                </p>
+                <Link to="/deck/create" className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-indigo-700 transition-colors">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Presentation
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Decks Grid */}
+          {!loading && !error && decks.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {decks.map((deck) => (
+                <motion.div
+                  key={deck.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                        {deck.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 line-clamp-3 mb-3">
+                        {deck.prompt_text}
+                      </p>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        {new Date(deck.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {deck.generated_content_json?.presentation_url && (
+                      <a
+                        href={deck.generated_content_json.presentation_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Download
+                      </a>
+                    )}
+                    {deck.generated_content_json?.edit_url && (
+                      <a
+                        href={deck.generated_content_json.edit_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center px-3 py-2 text-xs bg-green-50 text-green-700 rounded-md hover:bg-green-100 transition-colors"
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit Online
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </main>
     </div>

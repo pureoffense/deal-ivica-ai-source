@@ -1,29 +1,78 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Sparkles, AlertCircle, CheckCircle, Palette } from 'lucide-react';
 // import { useAuthStore } from '@/stores/authStore';
 import { APP_CONFIG } from '@/constants';
 import { createDeck } from '@/services/deckService';
+import { getAllTemplates } from '@/services/presentonService';
 
 const schema = z.object({
   prompt: z.string().min(10, 'Prompt too short'),
+  template: z.string().min(1, 'Please select a template'),
   gates: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
+interface Template {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  preview?: string | null;
+}
+
 const DeckCreation = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema)
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      template: 'general'
+    }
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const selectedTemplate = watch('template');
+
+  // Load templates and handle URL parameters
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        setTemplatesLoading(true);
+        const availableTemplates = await getAllTemplates();
+        setTemplates(availableTemplates);
+        
+        // Check for template parameter in URL
+        const templateParam = searchParams.get('template');
+        if (templateParam && availableTemplates.some(t => t.name === templateParam)) {
+          setValue('template', templateParam);
+        }
+      } catch (err) {
+        console.error('Error loading templates:', err);
+        // Use fallback templates
+        setTemplates([
+          {
+            id: 'general',
+            name: 'general',
+            displayName: 'General',
+            description: 'Versatile template suitable for any presentation type'
+          }
+        ]);
+      } finally {
+        setTemplatesLoading(false);
+      }
+    };
+
+    loadTemplates();
+  }, [searchParams, setValue]);
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -35,6 +84,7 @@ const DeckCreation = () => {
       // Call the deck creation service
       const deck = await createDeck({
         prompt: data.prompt,
+        template: data.template,
         gates: data.gates || []
       });
       
@@ -136,6 +186,66 @@ const DeckCreation = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* Template Selection */}
+            <div>
+              <label htmlFor="template" className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex items-center">
+                  <Palette className="w-4 h-4 mr-2" />
+                  Presentation Template
+                </div>
+              </label>
+              
+              {templatesLoading ? (
+                <div className="border border-gray-300 rounded-md p-4">
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent mr-2"></div>
+                    <span className="text-gray-600">Loading templates...</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                  {templates.map((template) => (
+                    <label
+                      key={template.id}
+                      className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none ${
+                        selectedTemplate === template.name
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                          : 'border-gray-300 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        {...register('template')}
+                        type="radio"
+                        value={template.name}
+                        className="sr-only"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <div className="text-sm">
+                            <div className="font-medium text-gray-900">
+                              {template.displayName}
+                            </div>
+                            <div className="text-gray-500">
+                              {template.description}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`absolute -inset-px rounded-lg border-2 pointer-events-none ${
+                        selectedTemplate === template.name
+                          ? 'border-primary'
+                          : 'border-transparent'
+                      }`} />
+                    </label>
+                  ))}
+                </div>
+              )}
+              
+              {errors.template && (
+                <p className="mt-1 text-sm text-red-600">{errors.template.message}</p>
+              )}
+            </div>
 
             {/* Prompt Input */}
             <div>
