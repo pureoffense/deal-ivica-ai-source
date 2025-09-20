@@ -34,6 +34,7 @@
     "react-doc-viewer": "^0.1.14",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",
+    "react-pdf": "^10.1.0",
     "react-router-dom": "^7.9.1",
     "zod": "^4.1.9",
     "zustand": "^5.0.8"
